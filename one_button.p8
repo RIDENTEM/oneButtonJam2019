@@ -2,66 +2,75 @@ pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
 px = 73
-py = 66
-g= 0.1
+py = 66 
 lx1=32
 ly1=127
 lx2=127
 ly2=0
-pvelocity= {pvx=0,pvy=g}
+
 obstacle= {grounded=false,
 ox=0,oy=0} 
-grounded = false
+
 jumping = false
 first_jump_avail = false
-double_jump_avail = true
+double_jump_avail = false
+
+function _init()
+grounded = false
+g=0.1
+pvelocity= {pvx=0,pvy=g}
+end
 
 function _draw()
 cls()
-print("one button")
+
+print(grounded)
 circfill(px,py, 1,3)
 --draw mountain
 line(lx1,ly1,lx2,ly2,6)
-
-for j=0, 127 do
+--[[for j=0, 127 do
  for i=0,127 do
   if(pget(i,j)==6) then
   pset(i+1,j,6)
   end
  end
-end
-
+end--]]
 end
 
 function check_collision()
-
- if(pget(px,py+1)==0) then
+ if(pget(px+1,py+1)==6) then
  grounded=true
  first_jump_avail=true
  second_jump_avail=false
+ pvelocity.pvx=0
+ pvelocity.pvy=0
+ else 
+ grounded=false 
+ pvelocity.pvy+=g
+ py+=pvelocity.pvy
  end
-
 end
 
 function _input()
-
- if(btn(2)and grounded) then
+ if(btnp(2)and grounded) then
+ jump(first_jump_avail)
  grounded = false
  first_jump_avail=false
  second_jump_avail=true
- elseif(btn(2)and second_jump_avail)
+ elseif(btnp(2)
+ and second_jump_avail)
  then
+ jump(first_jump_avail)
  first_jump_avail=false
  second_jump_avail=false
- 
  end
-
 end
 
+
 function _update()
-
-if(grounded==false) slide()
-
+check_collision()
+_input()
+if(grounded) slide()
 end
 
 function spawn_obstacles()
@@ -71,23 +80,20 @@ end
 
 --only set gravity while jumping
 function jump(is_first)
-pvelocity += g
+pvelocity.pvy += g
  if(is_first)then
   pvelocity.pvy-=2
  else
  pvelocity.pvx+=1
  pvelocity.pvy+=0.5
  end
-
+px+=pvelocity.pvx
+py+=pvelocity.pvy
 end
 
 function slide()
  px-=1
  py+=1
- lx1-=1
- ly1+=1
- lx2-=1
- ly2+=1
  if(pget(px+1,py)==3)
  then
 
