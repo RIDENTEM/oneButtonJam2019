@@ -9,23 +9,42 @@ lx2=127
 ly2=0
 
 obstacle= {grounded=false,
-ox=0,oy=0}
+ox=0,oy=0,ovx=0,ovy=g}
+
+obstacles={}
 
 first_jump_avail = false
 double_jump_avail = false
 start=true
 jumping = false
 
+function bounce()
+print("bounce")
+obstacle.ovx-=rnd(0.1,1.5)
+obstacle.ovy-=rnd(1.0,1.5)
+obstacle.grounded=false
+end
+
+function respawnObstacle()
+obstacle.ox=100
+obstacle.oy=10
+obstacle.ovx=-0.5
+obstacle.ovy=1
+obstacle.grounded=false
+end
+
+
 function _init()
 grounded = false
 g=0.1
 pvelocity= {pvx=0,pvy=g}
+respawnObstacle()
 end
 
 function _draw()
 
 cls()
-print(pvelocity.pvy)
+print(obstacle.grounded)
 --draw mountain
 line(lx1,ly1,lx2,ly2,6)
 --[[for j=0, 127 do
@@ -35,27 +54,35 @@ line(lx1,ly1,lx2,ly2,6)
   end
  end
 end--]]
-print(grounded)
+
+--Player here
 circfill(px,py, 1,3)
+--Obstacle here
+circfill(obstacle.ox,obstacle.oy,2,5)
 
 end
 
 function _update()
  _input()
- if(grounded ==false) then
+if(grounded ==false) updatePlayerMovement()
+--if(obstacleTouchedGround)
+updateObstacleMovement()
+respawn()
+check_collision(true,px,py)
+check_collision(false,obstacle.ox,obstacle.oy)
+if(grounded) slide()
+end
+
+function updatePlayerMovement()
   px+=pvelocity.pvx
   py+=pvelocity.pvy
 pvelocity.pvy+=g
 end
 
-
-respawn()
-check_collision()
-if(grounded) slide()
-end
-
-function spawn_obstacles()
-
+function updateObstacleMovement()
+obstacle.ovy+=g
+obstacle.ox+=obstacle.ovx
+obstacle.oy+=obstacle.ovy
 
 end
 
@@ -71,11 +98,11 @@ function on_ungrounded()
  jumping=true
 end
 
-function check_collision()
- if(pget(px+1,py+1)==6) then
- on_grounded()
- else
- end
+--Update this to work for obstacles
+function check_collision(isPlayer,x,y)
+
+ if(isPlayer and pget(x+1,y+1)==6) on_grounded()
+if(isPlayer==false and x+y>126) bounce()
 end
 
 function _input()
