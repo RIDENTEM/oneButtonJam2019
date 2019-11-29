@@ -8,8 +8,7 @@ ly1=127
 lx2=127
 ly2=0
 
-obstacle= {grounded=false,
-ox=0,oy=0,ovx=0,ovy=g}
+obstacle= {ox=0,oy=0,ovx=0,ovy=g}
 
 obstacles={}
 
@@ -20,9 +19,8 @@ jumping = false
 
 function bounce()
 print("bounce")
-obstacle.ovx-=rnd(0.1,1.5)
-obstacle.ovy-=rnd(1.0,1.5)
-obstacle.grounded=false
+obstacle.ovx-=rnd(0.7,1)
+obstacle.ovy-=rnd(2,2.5)
 end
 
 function respawnObstacle()
@@ -30,7 +28,6 @@ obstacle.ox=100
 obstacle.oy=10
 obstacle.ovx=-0.5
 obstacle.ovy=1
-obstacle.grounded=false
 end
 
 
@@ -41,10 +38,13 @@ pvelocity= {pvx=0,pvy=g}
 respawnObstacle()
 end
 
+dSize=4
+
+shrink=0.2
 function _draw()
 
 cls()
-print(obstacle.grounded)
+
 --draw mountain
 line(lx1,ly1,lx2,ly2,6)
 --[[for j=0, 127 do
@@ -57,17 +57,22 @@ end--]]
 
 --Player here
 circfill(px,py, 1,3)
+
+if(dSize<=0) dSize=4
+--circfill(px+2,py-2,dSize-shrink,4)
+
 --Obstacle here
 circfill(obstacle.ox,obstacle.oy,2,5)
 
 end
 
 function _update()
+ --dSize-=shrink
  _input()
 if(grounded ==false) updatePlayerMovement()
---if(obstacleTouchedGround)
+if(obstacle.ox<=0) respawnObstacle()
 updateObstacleMovement()
-respawn()
+if(px < 10 or py>127) respawn()
 check_collision(true,px,py)
 check_collision(false,obstacle.ox,obstacle.oy)
 if(grounded) slide()
@@ -89,8 +94,7 @@ end
 function on_grounded()
 start=false
  grounded=true
- first_jump_avail=true
- second_jump_avail=false
+ pvelocity.pvx=0
 end
 
 function on_ungrounded()
@@ -101,40 +105,26 @@ end
 --Update this to work for obstacles
 function check_collision(isPlayer,x,y)
 
- if(isPlayer and pget(x+1,y+1)==6) on_grounded()
-if(isPlayer==false and x+y>126) bounce()
+ if(isPlayer and x+y>=125)on_grounded()
+if(isPlayer==false and x+y>=124) bounce()
+--Something wrong with this
+if(isPlayer==false and ((px>x-4 and px<x+4)and (py>y-4 and py<y+4))) then
+respawn()
+end
 end
 
 function _input()
 if(btnp(2)) then
 on_ungrounded()
- if(first_jump_avail)
-  then
-  jump(first_jump_avail)
-  first_jump_avail=false
-  second_jump_avail=true
+  jump()
   end
- if(second_jump_avail)
-  then
-  first_jump_avail=false
-  second_jump_avail=false
-     jump(first_jump_avail)
-  end
- end
 end
 
 
 --Need to make sure the player can jump while grounded
-function jump(is_first)
- if(is_first) pvelocity.pvy-=2
-
- if(is_first==false)
- then
+function jump()
  pvelocity.pvx+=1
- --Problem with this, this is the first jump that goes
  pvelocity.pvy-=2
- end
-
 end
 
 function slide()
@@ -143,12 +133,12 @@ function slide()
 end
 
 function respawn()
-if(px < 10)
- then
+ print("getting called")
  on_ungrounded()
+ pvelocity.pvx=0
+ pvelocity.pvy=0.5
  px=60
  py=40
- end
 end
 
 
