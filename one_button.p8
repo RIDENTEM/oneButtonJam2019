@@ -8,26 +8,30 @@ ly1=127
 lx2=127
 ly2=0
 
-obstacle= {ox=0,oy=0,ovx=0,ovy=g}
+ob1= {ox=0,oy=0,ovx=0,ovy=g}
+ob2= {ox=0,oy=0,ovx=0,ovy=g}
+obstacles={ob1,ob2}
 
-obstacles={}
 
-first_jump_avail = false
-double_jump_avail = false
+ended=false
 start=true
 jumping = false
+score=0
 
-function bounce()
-print("bounce")
-obstacle.ovx-=rnd(0.7,1)
-obstacle.ovy-=rnd(2,2.5)
+function bounce(o)
+--o.ovy=0
+o.ovx-=rnd(2.5,3.0)
+o.ovy-=rnd(2.5,4.5)
 end
 
-function respawnObstacle()
-obstacle.ox=100
-obstacle.oy=10
-obstacle.ovx=-0.5
-obstacle.ovy=1
+function respawnObstacle(o)
+a=0
+a+=5
+o.ox=100+a
+o.oy=10
+o.ovx=-0.5
+o.ovy=0.1
+
 end
 
 
@@ -35,47 +39,52 @@ function _init()
 grounded = false
 g=0.1
 pvelocity= {pvx=0,pvy=g}
-respawnObstacle()
+ for o in all (obstacles) do
+respawnObstacle(o)
+end
 end
 
-dSize=4
-
-shrink=0.2
 function _draw()
-
 cls()
 
---draw mountain
-line(lx1,ly1,lx2,ly2,6)
---[[for j=0, 127 do
- for i=0,127 do
-  if(pget(i,j)==6) then
-  pset(i+1,j,6)
-  end
- end
-end--]]
+--main menu
+if(start) then
+print("MOUNTAIN CLIMBER",35,66)
+print("PRESS ⬆️ TO PLAY!",35,75)
+end
+if(ended) print("PRESS ⬆️ to retry", 35, 75) print("SCORE: ",35,85) print(score,60,85)
 
---Player here
-circfill(px,py, 1,3)
-
-if(dSize<=0) dSize=4
---circfill(px+2,py-2,dSize-shrink,4)
-
+if(start==false and ended==false)
+then
+ print(score)
+ --draw mountain
+ line(lx1,ly1,lx2,ly2,6)
+ --Player here
+ circfill(px,py, 1,3)
 --Obstacle here
-circfill(obstacle.ox,obstacle.oy,2,5)
-
+ for o in all (obstacles) do
+ circfill(o.ox,o.oy,3,5)
+ end
+ end
 end
 
 function _update()
- --dSize-=shrink
- _input()
-if(grounded ==false) updatePlayerMovement()
-if(obstacle.ox<=0) respawnObstacle()
-updateObstacleMovement()
-if(px < 10 or py>127) respawn()
-check_collision(true,px,py)
-check_collision(false,obstacle.ox,obstacle.oy)
-if(grounded) slide()
+  _input()
+ if(start==false and ended==false)
+ then
+   score+=1/30
+
+   if(grounded ==false) updatePlayerMovement()
+   if(grounded) slide()
+   updateObstacleMovement()
+   if(px < 10 or py>127) died()
+   check_collision(true,px,py)
+   for o in all (obstacles) do
+    if(o.ox+o.oy>=123) o.ovy=0 bounce(o)
+    check_collision(false,o.ox,o.oy)
+    if(o.ox<=0) respawnObstacle(o)
+   end
+  end
 end
 
 function updatePlayerMovement()
@@ -85,36 +94,40 @@ pvelocity.pvy+=g
 end
 
 function updateObstacleMovement()
-obstacle.ovy+=g
-obstacle.ox+=obstacle.ovx
-obstacle.oy+=obstacle.ovy
-
+ for o in all (obstacles) do
+o.ovy+=g
+o.ox+=o.ovx
+o.oy+=o.ovy
+end
 end
 
 function on_grounded()
 start=false
  grounded=true
  pvelocity.pvx=0
+ pvelocity.pvy=0
 end
 
 function on_ungrounded()
+ py-=4
  grounded=false
  jumping=true
 end
 
+function died()
+ended=true
+end
+
 --Update this to work for obstacles
 function check_collision(isPlayer,x,y)
-
  if(isPlayer and x+y>=125)on_grounded()
-if(isPlayer==false and x+y>=124) bounce()
---Something wrong with this
-if(isPlayer==false and ((px>x-4 and px<x+4)and (py>y-4 and py<y+4))) then
-respawn()
-end
+ if(isPlayer==false and((px>x-3 and px<x+3)and (py>y-3 and py<y+3))) died()
 end
 
 function _input()
-if(btnp(2)) then
+ if(btnp(2) and start) start=false
+ if(btnp(2)and ended) respawn()
+if(btnp(2)and grounded) then
 on_ungrounded()
   jump()
   end
@@ -133,12 +146,17 @@ function slide()
 end
 
 function respawn()
- print("getting called")
+for o in all (obstacles) do
+respawnObstacle(o)
+end
+score=0
+ended=false
  on_ungrounded()
  pvelocity.pvx=0
  pvelocity.pvy=0.5
  px=60
  py=40
+
 end
 
 
@@ -153,6 +171,8 @@ __gfx__
 0070070000664bbb66666666dadd86660066dddd666ddddddd6dd6ddbbbdbbd60000000000000000000000000000000000000000000000000000000000000000
 000000000664444b66666666dd888a6d06dd6ddd66ddddddd66d6dddd6bdbdd60000000000000000000000000000000000000000000000000000000000000000
 000000006644bb4466666666d866add66ddddddd6dd6d66dd6dddd6dd6d6bd660000000000000000000000000000000000000000000000000000000000000000
+__label__
+
 __map__
 1414141414140000080800001717171400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 1414141414100808080808080817171400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
